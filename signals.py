@@ -94,8 +94,3 @@ def normalize_symbol(raw: str) -> str:
 def now_str():
     return pd.Timestamp.now(tz="Asia/Seoul").strftime("%Y-%m-%d %H:%M:%S")
 
-def ensure_columns(df: pd.DataFrame, cols):
-    for c in cols:
-        if c not in df.columns:
-            df[c] = np.nan
-    return df
