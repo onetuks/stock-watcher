@@ -1,0 +1,12 @@
+ticker,market,name,notes
+NASDAQ:GOOGL,US,Alphabet A,
+NASDAQ:AAPL,US,Apple,
+NASDAQ:NVDA,US,NVIDIA,
+NASDAQ:TSLA,US,Tesla,
+NYSE:BAC,US,Bank of America,
+NYSE:PM,US,Philip Morris,
+NYSE:PFE,US,Pfizer,
+NYSE:AXP,US,American Express,
+KRX:005930,KR,Samsung Elec,
+KRX:000660,KR,SK hynix,
+KRX:352820,KR,HYBE,

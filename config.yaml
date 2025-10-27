@@ -1,0 +1,28 @@
+# ===== WatchDash (A안, Streamlit MVP) =====
+# 파라미터: 네 전략 값(필요시 수정)
+params:
+  lookback_bars: 252     # 최근 고점 탐색 기간(일봉 기준)
+  dd_entry_pct: 15.0     # 진입: 최근고점대비 하락률(%) 이상
+  rsi_len: 14            # RSI 기간
+  rsi_entry_max: 35.0    # 진입: RSI 미만
+  tp_min: 12.0           # 1차 익절 하한(%)
+  tp_max: 15.0           # 1차 익절 상한(%)
+  trail_drop: 5.0        # 트레일링 스탑: 고점대비 하락률(%)
+  default_capital_pct: 20  # (참고용) 포지션 비중 %
+
+# 알림 (옵션): 텔레그램 봇 알림 사용 시 채우기
+notify:
+  telegram:
+    enabled: false
+    bot_token: ""   # 예: 123456789:ABCDEF...
+    chat_id: ""     # 예: 987654321
+
+# 데이터 캐시 옵션
+data_cache:
+  enabled: true
+  dir: "./data"
+
+# 데이터 기본 기간(다운로드, yfinance)
+data:
+  period: "3y"
+  interval: "1d"
