@@ -1,8 +1,10 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import ta
 
-def compute_indicators(df: pd.DataFrame, lookback_bars: int = 252, rsi_len: int = 14) -> pd.DataFrame:
+
+def compute_indicators(df: pd.DataFrame, lookback_bars: int = 252,
+    rsi_len: int = 14) -> pd.DataFrame:
   """
   df는 yfinance가 반환한 일봉 DataFrame.
   MultiIndex(필드,티커) 형태일 수도 있으므로 OHLCV 단일 컬럼으로 표준화한다.
@@ -12,7 +14,8 @@ def compute_indicators(df: pd.DataFrame, lookback_bars: int = 252, rsi_len: int 
   # 1) MultiIndex면 티커 레벨 제거 → 'Open','High','Low','Close','Adj Close','Volume'
   if isinstance(out.columns, pd.MultiIndex):
     # 보통 (필드,티커) 순서. 티커가 1개뿐이면 그 레벨을 드롭.
-    if out.columns.nlevels == 2 and len(out.columns.get_level_values(1).unique()) == 1:
+    if out.columns.nlevels == 2 and len(
+        out.columns.get_level_values(1).unique()) == 1:
       out.columns = out.columns.get_level_values(0)
     else:
       # (희소) 여러 티커가 섞여 들어온 경우 – 여기서는 사용하지 않으므로 첫 번째 티커만 선택
@@ -38,13 +41,14 @@ def compute_indicators(df: pd.DataFrame, lookback_bars: int = 252, rsi_len: int 
   needed = ["Open", "High", "Low", "Close"]
   for c in needed:
     if c not in out.columns:
-      raise ValueError(f"compute_indicators: required column '{c}' missing. columns={list(out.columns)}")
+      raise ValueError(
+        f"compute_indicators: required column '{c}' missing. columns={list(out.columns)}")
 
   # 5) Series 강제
   def ensure_series(x):
     return x.iloc[:, 0] if isinstance(x, pd.DataFrame) else x
 
-  high  = pd.to_numeric(ensure_series(out["High"]), errors="coerce")
+  high = pd.to_numeric(ensure_series(out["High"]), errors="coerce")
   close = pd.to_numeric(ensure_series(out["Close"]), errors="coerce")
 
   # 6) 최근 고점(rolling max)
@@ -67,18 +71,24 @@ def entry_signal(row, dd_entry_pct: float, rsi_entry_max: float) -> bool:
     return False
   return (row["dd_pct"] >= dd_entry_pct) and (row["rsi"] < rsi_entry_max)
 
-def calc_tp_band(entry_price: float, tp_min: float, tp_max: float):
-  return entry_price*(1.0+tp_min/100.0), entry_price*(1.0+tp_max/100.0)
 
-def trail_trigger(current_close: float, run_high: float, trail_drop: float) -> bool:
+def calc_tp_band(entry_price: float, tp_min: float, tp_max: float):
+  return entry_price * (1.0 + tp_min / 100.0), entry_price * (
+        1.0 + tp_max / 100.0)
+
+
+def trail_trigger(current_close: float, run_high: float,
+    trail_drop: float) -> bool:
   if run_high is None or np.isnan(run_high) or run_high <= 0:
     return False
-  return current_close <= run_high * (1.0 - trail_drop/100.0)
+  return current_close <= run_high * (1.0 - trail_drop / 100.0)
+
 
 def update_run_high(prev_run_high, current_close):
   if prev_run_high is None or np.isnan(prev_run_high) or prev_run_high <= 0:
     return current_close
   return max(prev_run_high, current_close)
+
 
 def normalize_symbol(raw: str) -> str:
   # Accept "NASDAQ:TSLA" or "TSLA" — yfinance uses "TSLA" (US), "005930.KS" (KR)
@@ -90,6 +100,7 @@ def normalize_symbol(raw: str) -> str:
   if ":" in raw:
     return raw.split(":")[1]
   return raw
+
 
 def now_str():
   return pd.Timestamp.now(tz="Asia/Seoul").strftime("%Y-%m-%d %H:%M:%S")

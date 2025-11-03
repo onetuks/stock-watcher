@@ -1,4 +1,5 @@
 import os
+
 import numpy
 import pandas
 
@@ -9,9 +10,10 @@ def load_positions():
       f.write(
           "symbol,entry_date,entry_price,run_high,took_half,closed,close_date,close_price,round\n")
   position = pandas.read_csv("data/positions.csv")
-  position = ensure_columns(position, ["symbol", "entry_date", "entry_price", "run_high",
-                                       "took_half", "closed", "close_date", "close_price",
-                                       "round"])
+  position = ensure_columns(position,
+                            ["symbol", "entry_date", "entry_price", "run_high",
+                             "took_half", "closed", "close_date", "close_price",
+                             "round"])
   return position
 
 
