@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-import pandas_ta as ta
-from dateutil import parser
+import ta
 
 def compute_indicators(df: pd.DataFrame, lookback_bars: int = 252, rsi_len: int = 14) -> pd.DataFrame:
   """
@@ -56,41 +55,41 @@ def compute_indicators(df: pd.DataFrame, lookback_bars: int = 252, rsi_len: int 
   safe_recent_high = recent_high.replace(0, np.nan)
   out["dd_pct"] = (recent_high - close) / safe_recent_high * 100.0
 
-  # 8) RSI(14)
-  out["rsi"] = ta.rsi(close, length=int(rsi_len))
+  # 8) RSI(ta 라이브러리)
+  rsi_indicator = ta.momentum.RSIIndicator(close=close, window=int(rsi_len))
+  out["rsi"] = rsi_indicator.rsi()
 
   return out
 
 
 def entry_signal(row, dd_entry_pct: float, rsi_entry_max: float) -> bool:
-    if np.isnan(row.get("dd_pct", np.nan)) or np.isnan(row.get("rsi", np.nan)):
-        return False
-    return (row["dd_pct"] >= dd_entry_pct) and (row["rsi"] < rsi_entry_max)
+  if np.isnan(row.get("dd_pct", np.nan)) or np.isnan(row.get("rsi", np.nan)):
+    return False
+  return (row["dd_pct"] >= dd_entry_pct) and (row["rsi"] < rsi_entry_max)
 
 def calc_tp_band(entry_price: float, tp_min: float, tp_max: float):
-    return entry_price*(1.0+tp_min/100.0), entry_price*(1.0+tp_max/100.0)
+  return entry_price*(1.0+tp_min/100.0), entry_price*(1.0+tp_max/100.0)
 
 def trail_trigger(current_close: float, run_high: float, trail_drop: float) -> bool:
-    if run_high is None or np.isnan(run_high) or run_high <= 0:
-        return False
-    return current_close <= run_high * (1.0 - trail_drop/100.0)
+  if run_high is None or np.isnan(run_high) or run_high <= 0:
+    return False
+  return current_close <= run_high * (1.0 - trail_drop/100.0)
 
 def update_run_high(prev_run_high, current_close):
-    if prev_run_high is None or np.isnan(prev_run_high) or prev_run_high <= 0:
-        return current_close
-    return max(prev_run_high, current_close)
+  if prev_run_high is None or np.isnan(prev_run_high) or prev_run_high <= 0:
+    return current_close
+  return max(prev_run_high, current_close)
 
 def normalize_symbol(raw: str) -> str:
-    # Accept "NASDAQ:TSLA" or "TSLA" — yfinance uses "TSLA" (US), "005930.KS" (KR)
-    # We'll convert KRX prefix to ".KS" suffix if numeric code. Manual mapping may be needed.
-    if raw.startswith("KRX:"):
-        code = raw.split(":")[1]
-        # naive mapping: assume Korea Exchange ".KS"
-        return f"{code}.KS"
-    if ":" in raw:
-        return raw.split(":")[1]
-    return raw
+  # Accept "NASDAQ:TSLA" or "TSLA" — yfinance uses "TSLA" (US), "005930.KS" (KR)
+  # We'll convert KRX prefix to ".KS" suffix if numeric code. Manual mapping may be needed.
+  if raw.startswith("KRX:"):
+    code = raw.split(":")[1]
+    # naive mapping: assume Korea Exchange ".KS"
+    return f"{code}.KS"
+  if ":" in raw:
+    return raw.split(":")[1]
+  return raw
 
 def now_str():
-    return pd.Timestamp.now(tz="Asia/Seoul").strftime("%Y-%m-%d %H:%M:%S")
-
+  return pd.Timestamp.now(tz="Asia/Seoul").strftime("%Y-%m-%d %H:%M:%S")
