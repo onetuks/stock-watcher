@@ -5,14 +5,15 @@ import yfinance as yf
 
 from config.config import DD_PCT, RSI_MAX, TP_MIN, TP_MAX, TRAIL, PERIOD, \
   INTERVAL, LOOKBACK, RSI_LEN, TG_TOKEN, TG_CHAT, TG_ENABLED
-from data.positions import save_positions, positions
-from data.watchlist import watchlist
 from core.notifier import send_telegram
 from core.signals import (
   compute_indicators, entry_signal, calc_tp_band, trail_trigger,
   normalize_symbol
 )
+from data.positions import save_positions, positions
+from data.watchlist import watchlist
 from ui.interested import render_interested
+from ui.register import render_register
 
 streamlit.set_page_config(page_title="WatchDash (A안)", layout="wide")
 
@@ -32,8 +33,9 @@ def fetch_price_df(sym: str, period: str, interval: str):
 
 # --------- UI ---------
 streamlit.title("📈 WatchDash — 전략 신호 모니터 (A안)")
+# todo: 전체금액(원/달러) + 수익(수익 퍼센트) + 전략 도식화
 streamlit.markdown(
-  f"- 파라미터: DD≥**{DD_PCT}%**, RSI<{RSI_MAX}, TP **{TP_MIN}~{TP_MAX}%**, 트레일링 **-{TRAIL}%**")
+    f"- 파라미터: DD≥**{DD_PCT}%**, RSI<{RSI_MAX}, TP **{TP_MIN}~{TP_MAX}%**, 트레일링 **-{TRAIL}%**")
 
 colL, colR = streamlit.columns([2, 1])
 
@@ -43,28 +45,7 @@ with colL:
 
 with colR:
   streamlit.subheader("수동 포지션 등록")
-  symbol = streamlit.selectbox("티커 선택", watchlist["ticker"].tolist())
-  entry_price = streamlit.number_input("진입가(체결가)", min_value=0.0, step=0.1,
-                                format="%.4f")
-  round_no = streamlit.number_input("전략 라운드", min_value=1, step=1, value=1)
-  if streamlit.button("진입 기록"):
-    if entry_price > 0:
-      new = pd.DataFrame([{
-        "symbol": symbol,
-        "entry_date": pd.Timestamp.now(tz="Asia/Seoul").date().isoformat(),
-        "entry_price": entry_price,
-        "run_high": entry_price,
-        "took_half": False,
-        "closed": False,
-        "close_date": "",
-        "close_price": np.nan,
-        "round": int(round_no)
-      }])
-      positions = pd.concat([positions, new], ignore_index=True)
-      save_positions(positions)
-      streamlit.success(f"진입 기록 완료: {symbol} @ {entry_price}")
-    else:
-      streamlit.error("진입가를 입력하세요.")
+  render_register(container=streamlit, watchlist=watchlist)
 
 # --------- Main loop: compute signals per symbol ---------
 rows = []
@@ -99,7 +80,7 @@ for _, row in watchlist.iterrows():
     tp_hint = f"{tp_low:.2f} ~ {tp_high:.2f}"
     # Check TP "hit" range
     if last["Close"] >= tp_low and last["Close"] <= tp_high and (
-    not bool(pos["took_half"])):
+        not bool(pos["took_half"])):
       tp_hit = True
     # Trailing
     trail_hit = trail_trigger(float(last["Close"]), run_high, TRAIL)
@@ -134,25 +115,25 @@ for _, row in watchlist.iterrows():
 save_positions(positions)
 
 streamlit.markdown("### 오늘의 신호")
-streamlit.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+streamlit.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
 # --------- Detail chart for a selected symbol ---------
 streamlit.markdown("---")
 sel = streamlit.selectbox("차트 보기", watchlist["ticker"].tolist(), index=0,
-                   key="chart_sel")
+                          key="chart_sel")
 df = fetch_price_df(sel, PERIOD, INTERVAL)
 if not df.empty:
   ind = compute_indicators(df, LOOKBACK, RSI_LEN)
   streamlit.line_chart(ind[["Close", "recent_high"]], height=300,
-                use_container_width=True)
-  streamlit.area_chart(ind[["rsi"]], height=150, use_container_width=True)
+                       width="stretch")
+  streamlit.area_chart(ind[["rsi"]], height=150, width="stretch")
   streamlit.caption("Close & RecentHigh(252), RSI(14)")
 
 # --------- Actions for open position (half TP / close) ---------
 streamlit.markdown("---")
 streamlit.subheader("포지션 관리(수동 기록)")
 open_pos = positions[(positions["closed"] == False)]
-streamlit.dataframe(open_pos, use_container_width=True, hide_index=True)
+streamlit.dataframe(open_pos, width="stretch", hide_index=True)
 
 col1, col2 = streamlit.columns(2)
 with col1:
@@ -164,7 +145,7 @@ with col1:
     else:
       # mark took_half=True (단순 기록)
       idx = positions[(positions["symbol"] == tgt_symbol) & (
-            positions["closed"] == False)].index
+          positions["closed"] == False)].index
       if len(idx) > 0:
         positions.loc[idx[-1], "took_half"] = True
         save_positions(positions)
@@ -174,14 +155,14 @@ with col2:
   tgt_symbol2 = streamlit.selectbox("전량 청산 심볼", positions[
     "symbol"].unique().tolist() if not positions.empty else [], key="act_sym2")
   close_price = streamlit.number_input("청산가(체결가)", min_value=0.0, step=0.1,
-                                format="%.4f")
+                                       format="%.4f")
   if streamlit.button("전량 청산 기록(수동)"):
     idx = positions[(positions["symbol"] == tgt_symbol2) & (
-          positions["closed"] == False)].index
+        positions["closed"] == False)].index
     if len(idx) > 0 and close_price > 0:
       positions.loc[idx[-1], "closed"] = True
       positions.loc[idx[-1], "close_date"] = pd.Timestamp.now(
-        tz="Asia/Seoul").date().isoformat()
+          tz="Asia/Seoul").date().isoformat()
       positions.loc[idx[-1], "close_price"] = close_price
       save_positions(positions)
       streamlit.success(f"{tgt_symbol2} 전량 청산 기록 완료")
