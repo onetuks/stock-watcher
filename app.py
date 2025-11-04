@@ -10,8 +10,8 @@ from core.signals import (
   compute_indicators, entry_signal, calc_tp_band, trail_trigger,
   normalize_symbol
 )
-from data.positions import save_positions, positions
-from data.watchlist import watchlist
+from data.positions.positions import save_positions, positions
+from data.watchlist.watchlist import watchlist
 from ui.interested import render_interested
 from ui.register import render_register
 
@@ -112,7 +112,7 @@ for _, row in watchlist.iterrows():
   })
 
 # Persist run_high updates if any
-save_positions(positions)
+# save_positions(positions)
 
 streamlit.markdown("### 오늘의 신호")
 streamlit.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
