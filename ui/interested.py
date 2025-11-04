@@ -34,11 +34,11 @@ def render_interested(container, watchlist: pandas.DataFrame):
             "종목명",
             width="small",
         ),
-        "count": container.column_config.NumberColumn(
+        "quantity": container.column_config.NumberColumn(
             "보유수량",
             width="small",
         ),
-        "portion": container.column_config.NumberColumn(
+        "ratio": container.column_config.NumberColumn(
             "포트폴리오 비율",
             width="small",
             format="percent",
